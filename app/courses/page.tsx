@@ -187,39 +187,40 @@ export default function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-white">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
             </Link>
             <div className="flex items-center gap-2">
-              <GraduationCap className="h-6 w-6 text-primary" />
-              <span className="text-xl font-semibold">Sonic University</span>
+              <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              <span className="text-lg sm:text-xl font-semibold">
+                <span className="hidden sm:inline">Sonic University</span>
+                <span className="sm:hidden">Sonic</span>
+              </span>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Course Catalog</h1>
-            <p className="text-muted-foreground">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Course Catalog</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Explore our comprehensive blockchain and Web3 courses. Earn SET tokens by completing modules and
               assessments.
             </p>
           </div>
 
-          {/* Filters */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-4">
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex flex-col gap-4">
                   <div className="flex-1">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -231,9 +232,9 @@ export default function CoursesPage() {
                       />
                     </div>
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-full sm:w-40">
                         <SelectValue placeholder="Category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -246,7 +247,7 @@ export default function CoursesPage() {
                     </Select>
 
                     <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className="w-full sm:w-40">
                         <SelectValue placeholder="Difficulty" />
                       </SelectTrigger>
                       <SelectContent>
@@ -263,10 +264,9 @@ export default function CoursesPage() {
             </Card>
           </div>
 
-          {/* Course Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="course-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredCourses.map((course) => (
-              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow card-interactive">
                 <div className="aspect-video bg-muted">
                   <img
                     src={course.image || "/placeholder.svg"}
@@ -274,36 +274,39 @@ export default function CoursesPage() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <CardHeader>
+                <CardHeader className="p-4 sm:p-6">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
-                    <Badge variant="outline" className="shrink-0">
+                    <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
+                    <Badge variant="outline" className="shrink-0 text-xs">
                       +{course.reward} SET
                     </Badge>
                   </div>
-                  <CardDescription className="line-clamp-3">{course.description}</CardDescription>
+                  <CardDescription className="line-clamp-3 text-sm">{course.description}</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Course Info */}
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {course.duration}
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">{course.duration}</span>
+                        <span className="sm:hidden">{course.duration.replace(" weeks", "w")}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {course.enrolled}/{course.maxEnrollment}
+                        <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">
+                          {course.enrolled}/{course.maxEnrollment}
+                        </span>
+                        <span className="sm:hidden">{course.enrolled}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-current text-yellow-500" />
+                        <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-current text-yellow-500" />
                         {course.rating}
                       </div>
                     </div>
 
                     {/* Instructor and Difficulty */}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">by {course.instructor}</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground truncate">by {course.instructor}</span>
                       <Badge
                         variant={
                           course.difficulty === "Beginner"
@@ -312,6 +315,7 @@ export default function CoursesPage() {
                               ? "default"
                               : "destructive"
                         }
+                        className="text-xs"
                       >
                         {course.difficulty}
                       </Badge>
@@ -333,7 +337,7 @@ export default function CoursesPage() {
                       >
                         <div className="flex items-center gap-2">
                           {getStatusIcon(course.status)}
-                          {getStatusText(course.status)}
+                          <span className="text-sm">{getStatusText(course.status)}</span>
                         </div>
                       </Button>
                     </Link>
@@ -347,8 +351,8 @@ export default function CoursesPage() {
           {filteredCourses.length === 0 && (
             <div className="text-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No courses found</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-lg sm:text-xl font-medium text-foreground mb-2">No courses found</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Try adjusting your search criteria or browse all available courses.
               </p>
             </div>

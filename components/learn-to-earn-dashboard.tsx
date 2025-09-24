@@ -60,38 +60,39 @@ export function LearnToEarnDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <section className="bg-muted/30 border-b border-border">
-        <div className="container mx-auto px-4 py-16 lg:py-20">
+      <section className="hero-section bg-muted/30 border-b border-border">
+        <div className="container mx-auto px-3 sm:px-4 py-12 sm:py-16 lg:py-20">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="flex items-center justify-center gap-3 mb-8">
-              <div className="p-3 rounded-full bg-primary/10">
-                <GraduationCap className="h-8 w-8 text-primary" />
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
+              <div className="p-2 sm:p-3 rounded-full bg-primary/10">
+                <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
               </div>
-              <span className="text-2xl font-semibold text-foreground">Sonic University</span>
+              <span className="text-xl sm:text-2xl font-semibold text-foreground">Sonic University</span>
             </div>
 
-            <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-6 text-balance">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6 text-balance leading-tight">
               Learn Blockchain Technology,
-              <br />
+              <br className="hidden sm:block" />
+              <span className="sm:hidden"> </span>
               Earn SET Tokens
             </h1>
 
-            <p className="text-lg text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 text-pretty max-w-2xl mx-auto px-4 sm:px-0">
               Complete course modules, master blockchain development, and earn SonicEduToken (SET) rewards for your
               achievements.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4 sm:px-0">
               {!isConnected && <WalletConnection />}
-              <Link href="/courses">
-                <Button variant="outline" size="lg">
+              <Link href="/courses" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent">
                   <BookOpen className="h-4 w-4 mr-2" />
                   Browse Courses
                 </Button>
               </Link>
               {!isConnected && (
-                <Link href="/register">
-                  <Button size="lg">
+                <Link href="/register" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto">
                     Get Started
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
@@ -100,29 +101,30 @@ export function LearnToEarnDashboard() {
             </div>
 
             {isConnected && (
-              <div className="mt-12 max-w-md mx-auto">
-                <Card className="border-border/50">
-                  <CardContent className="p-6">
+              <div className="mt-8 sm:mt-12 max-w-md mx-auto px-4 sm:px-0">
+                <Card className="border-border/50 card-interactive">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-medium text-foreground">Your Progress</h3>
                       <Link href="/profile">
                         <Button variant="ghost" size="sm">
                           <User className="h-4 w-4 mr-2" />
-                          View Profile
+                          <span className="hidden sm:inline">View Profile</span>
+                          <span className="sm:hidden">Profile</span>
                         </Button>
                       </Link>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 text-center">
                       <div>
-                        <div className="text-2xl font-bold text-foreground">{totalEarned}</div>
-                        <div className="text-sm text-muted-foreground">SET Earned</div>
+                        <div className="text-xl sm:text-2xl font-bold text-foreground">{totalEarned}</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">SET Earned</div>
                       </div>
                       <div>
-                        <div className="text-2xl font-bold text-foreground">
+                        <div className="text-xl sm:text-2xl font-bold text-foreground">
                           {modules.filter((m) => m.completed).length}
                         </div>
-                        <div className="text-sm text-muted-foreground">Completed</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">Completed</div>
                       </div>
                     </div>
 
@@ -130,7 +132,7 @@ export function LearnToEarnDashboard() {
                       <div className="mt-4 p-3 bg-success/10 rounded-lg border border-success/20">
                         <div className="flex items-center gap-2 justify-center">
                           <Coins className="h-4 w-4 text-success" />
-                          <span className="text-sm font-medium text-success">
+                          <span className="text-xs sm:text-sm font-medium text-success">
                             {availableRewards} SET ready to claim
                           </span>
                         </div>
@@ -144,41 +146,40 @@ export function LearnToEarnDashboard() {
         </div>
       </section>
 
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
-            <Card>
+      <section className="py-12 sm:py-16">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="stats-grid grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12 max-w-4xl mx-auto">
+            <Card className="card-interactive">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Earned</CardTitle>
                 <Coins className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalEarned} SET</div>
+                <div className="text-xl sm:text-2xl font-bold">{totalEarned} SET</div>
                 <p className="text-xs text-muted-foreground">
                   From {modules.filter((m) => m.claimed).length} completed modules
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-interactive">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Available Rewards</CardTitle>
                 <Trophy className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{availableRewards} SET</div>
+                <div className="text-xl sm:text-2xl font-bold">{availableRewards} SET</div>
                 <p className="text-xs text-muted-foreground">Ready to claim</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-interactive">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Progress</CardTitle>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-xl sm:text-2xl font-bold">
                   {modules.filter((m) => m.completed).length}/{modules.length}
                 </div>
                 <p className="text-xs text-muted-foreground">Modules completed</p>
@@ -188,9 +189,9 @@ export function LearnToEarnDashboard() {
 
           {/* Course Modules */}
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-foreground mb-4">Featured Modules</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">Featured Modules</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto mb-6 px-4 sm:px-0">
                 Complete modules to earn SET tokens and advance your blockchain knowledge
               </p>
               <Link href="/courses">
@@ -201,7 +202,7 @@ export function LearnToEarnDashboard() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="course-grid grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {modules.map((module) => (
                 <ModuleCard
                   key={module.id}

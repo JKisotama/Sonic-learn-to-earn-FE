@@ -23,46 +23,55 @@ export function useLearnToEarn() {
       try {
         setIsClaimingReward(true)
         setError("")
+        console.log("[v0] Starting SET token claim process for module:", moduleId)
 
         const network = await provider?.getNetwork()
         if (!network) {
           throw new Error("Unable to detect network")
         }
 
+        console.log("[v0] Current network:", network.chainId)
+
         // Check if we're on the correct network (Sepolia testnet)
         if (network.chainId !== 11155111n) {
-          throw new Error("Please switch to Sepolia testnet to claim rewards")
+          throw new Error("Please switch to Sepolia testnet to claim SET tokens")
         }
 
         const contract = new ethers.Contract(config.contracts.LEARN_TO_EARN, LEARN_TO_EARN_ABI, signer)
 
+        console.log("[v0] Estimating gas for SET token claim...")
         const gasEstimate = await contract.claimReward.estimateGas(moduleId)
         const gasLimit = (gasEstimate * 120n) / 100n // Add 20% buffer
+        console.log("[v0] Gas estimate:", gasEstimate.toString(), "Gas limit:", gasLimit.toString())
 
+        console.log("[v0] Executing SET token claim transaction...")
         const tx = await contract.claimReward(moduleId, { gasLimit })
         setTransactionHash(tx.hash)
+        console.log("[v0] SET token claim transaction submitted:", tx.hash)
 
         // Wait for transaction confirmation
-        await tx.wait()
+        console.log("[v0] Waiting for SET token claim confirmation...")
+        const receipt = await tx.wait()
+        console.log("[v0] SET token claim confirmed in block:", receipt.blockNumber)
 
         return tx.hash
       } catch (err: any) {
-        let errorMessage = "Transaction failed"
+        let errorMessage = "SET token claim failed"
 
         if (err.message.includes("network changed")) {
-          errorMessage = "Network changed during transaction. Please try again."
+          errorMessage = "Network changed during SET token claim. Please try again."
         } else if (err.message.includes("user rejected")) {
-          errorMessage = "Transaction was rejected"
+          errorMessage = "SET token claim was rejected by user"
         } else if (err.message.includes("insufficient funds")) {
-          errorMessage = "Insufficient funds for gas fees"
+          errorMessage = "Insufficient funds for gas fees to claim SET tokens"
         } else if (err.reason) {
-          errorMessage = err.reason
+          errorMessage = `SET token claim failed: ${err.reason}`
         } else if (err.message) {
-          errorMessage = err.message
+          errorMessage = `SET token claim failed: ${err.message}`
         }
 
         setError(errorMessage)
-        console.log("[v0] Claim reward error:", errorMessage)
+        console.log("[v0] SET token claim error:", errorMessage)
         throw new Error(errorMessage)
       } finally {
         setIsClaimingReward(false)
