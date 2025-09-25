@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -20,7 +20,11 @@ import {
   GraduationCap,
   FileText,
   Video,
+  Loader2,
 } from "lucide-react"
+import { useWeb3 } from "@/hooks/use-web3"
+import { useLearnToEarn, useModuleStatus } from "@/hooks/use-learn-to-earn"
+import { Toaster, toast } from "sonner"
 
 interface Module {
   id: number
@@ -28,103 +32,129 @@ interface Module {
   description: string
   duration: string
   type: "video" | "reading" | "quiz" | "assignment"
-  completed: boolean
+  // `completed` and `locked` will now be determined by blockchain state
   locked: boolean
 }
 
+// Mock course data - in a real app, this would be fetched based on params.id
+const course = {
+  id: 1, // Assuming a static ID for now
+  title: "Smart Contract Development",
+  description:
+    "Master the art of writing secure and efficient smart contracts using Solidity. Build real-world DApps and understand best practices for blockchain development.",
+  instructor: "Prof. Michael Rodriguez",
+  duration: "6 weeks",
+  difficulty: "Intermediate",
+  category: "Development",
+  reward: 200,
+  enrolled: 892,
+  maxEnrollment: 1500,
+  rating: 4.9,
+  totalRatings: 234,
+  prerequisites: ["Introduction to Blockchain"],
+  learningOutcomes: [
+    "Write secure smart contracts in Solidity",
+    "Deploy contracts to Ethereum testnet and mainnet",
+    "Implement common DeFi patterns and protocols",
+    "Test and debug smart contracts effectively",
+    "Understand gas optimization techniques",
+  ],
+  image: "/smart-contracts-development.jpg",
+}
+
+const modules: Module[] = [
+  {
+    id: 1,
+    title: "Introduction to Solidity",
+    description: "Learn the basics of Solidity programming language and development environment setup.",
+    duration: "45 min",
+    type: "video",
+    locked: false,
+  },
+  {
+    id: 2,
+    title: "Smart Contract Structure",
+    description: "Understand the anatomy of smart contracts, state variables, and functions.",
+    duration: "30 min",
+    type: "reading",
+    locked: false,
+  },
+  {
+    id: 3,
+    title: "Data Types and Variables",
+    description: "Explore Solidity data types, mappings, arrays, and storage vs memory.",
+    duration: "60 min",
+    type: "video",
+    locked: false,
+  },
+  {
+    id: 4,
+    title: "Functions and Modifiers",
+    description: "Learn about function visibility, modifiers, and access control patterns.",
+    duration: "50 min",
+    type: "video",
+    locked: false,
+  },
+  {
+    id: 5,
+    title: "Quiz: Solidity Basics",
+    description: "Test your understanding of basic Solidity concepts.",
+    duration: "20 min",
+    type: "quiz",
+    locked: true,
+  },
+  {
+    id: 6,
+    title: "Building Your First DApp",
+    description: "Create a complete decentralized application from scratch.",
+    duration: "90 min",
+    type: "assignment",
+    locked: true,
+  },
+]
+
 export default function CourseDetailPage({ params }: { params: { id: string } }) {
   const [enrollmentStatus, setEnrollmentStatus] = useState<"not_enrolled" | "enrolled" | "completed">("not_enrolled")
-  const [currentProgress, setCurrentProgress] = useState(0)
+  const [claimingModuleId, setClaimingModuleId] = useState<number | null>(null)
 
-  // Mock course data - in real app, this would be fetched based on params.id
-  const course = {
-    id: Number.parseInt(params.id),
-    title: "Smart Contract Development",
-    description:
-      "Master the art of writing secure and efficient smart contracts using Solidity. Build real-world DApps and understand best practices for blockchain development.",
-    instructor: "Prof. Michael Rodriguez",
-    duration: "6 weeks",
-    difficulty: "Intermediate",
-    category: "Development",
-    reward: 200,
-    enrolled: 892,
-    maxEnrollment: 1500,
-    rating: 4.9,
-    totalRatings: 234,
-    prerequisites: ["Introduction to Blockchain"],
-    learningOutcomes: [
-      "Write secure smart contracts in Solidity",
-      "Deploy contracts to Ethereum testnet and mainnet",
-      "Implement common DeFi patterns and protocols",
-      "Test and debug smart contracts effectively",
-      "Understand gas optimization techniques",
-    ],
-    image: "/smart-contracts-development.jpg",
-  }
+  const { account: userAddress } = useWeb3()
+  const { claimReward, isClaimingReward, error: claimError } = useLearnToEarn()
+  const moduleIds = modules.map((m) => m.id)
+  const { moduleStatus, isLoading: isLoadingStatus } = useModuleStatus(userAddress || "", moduleIds)
 
-  const modules: Module[] = [
-    {
-      id: 1,
-      title: "Introduction to Solidity",
-      description: "Learn the basics of Solidity programming language and development environment setup.",
-      duration: "45 min",
-      type: "video",
-      completed: true,
-      locked: false,
-    },
-    {
-      id: 2,
-      title: "Smart Contract Structure",
-      description: "Understand the anatomy of smart contracts, state variables, and functions.",
-      duration: "30 min",
-      type: "reading",
-      completed: true,
-      locked: false,
-    },
-    {
-      id: 3,
-      title: "Data Types and Variables",
-      description: "Explore Solidity data types, mappings, arrays, and storage vs memory.",
-      duration: "60 min",
-      type: "video",
-      completed: false,
-      locked: false,
-    },
-    {
-      id: 4,
-      title: "Functions and Modifiers",
-      description: "Learn about function visibility, modifiers, and access control patterns.",
-      duration: "50 min",
-      type: "video",
-      completed: false,
-      locked: false,
-    },
-    {
-      id: 5,
-      title: "Quiz: Solidity Basics",
-      description: "Test your understanding of basic Solidity concepts.",
-      duration: "20 min",
-      type: "quiz",
-      completed: false,
-      locked: true,
-    },
-    {
-      id: 6,
-      title: "Building Your First DApp",
-      description: "Create a complete decentralized application from scratch.",
-      duration: "90 min",
-      type: "assignment",
-      completed: false,
-      locked: true,
-    },
-  ]
+  const completedModulesCount = moduleStatus?.completed.filter(Boolean).length || 0
+  const progressPercentage = (completedModulesCount / modules.length) * 100
 
-  const completedModules = modules.filter((m) => m.completed).length
-  const progressPercentage = (completedModules / modules.length) * 100
+  useEffect(() => {
+    if (claimError) {
+      toast.error(claimError)
+    }
+  }, [claimError])
 
   const handleEnrollment = () => {
     setEnrollmentStatus("enrolled")
-    setCurrentProgress(progressPercentage)
+  }
+
+  const handleClaim = async (moduleId: number) => {
+    if (!userAddress) {
+      toast.error("Please connect your wallet to claim rewards.")
+      return
+    }
+    setClaimingModuleId(moduleId)
+    try {
+      const txHash = await claimReward(moduleId)
+      toast.success("Reward claimed successfully!", {
+        description: `Transaction: ${txHash.slice(0, 10)}...${txHash.slice(-8)}`,
+        action: {
+          label: "View on Etherscan",
+          onClick: () => window.open(`https://sepolia.etherscan.io/tx/${txHash}`, "_blank"),
+        },
+      })
+    } catch (err) {
+      // Error is already handled by the hook and displayed in a toast
+    } finally {
+      setClaimingModuleId(null)
+    }
   }
 
   const getModuleIcon = (type: Module["type"]) => {
@@ -142,8 +172,53 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
     }
   }
 
+  const renderModuleStatus = (module: Module, index: number) => {
+    if (isLoadingStatus) {
+      return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+    }
+
+    const isCompleted = moduleStatus?.completed[index]
+    const isClaimed = moduleStatus?.claimed[index]
+
+    if (isCompleted) {
+      if (isClaimed) {
+        return (
+          <Badge variant="secondary" className="cursor-default">
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Claimed
+          </Badge>
+        )
+      }
+      return (
+        <Button
+          size="sm"
+          onClick={() => handleClaim(module.id)}
+          disabled={isClaimingReward && claimingModuleId === module.id}
+        >
+          {isClaimingReward && claimingModuleId === module.id ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Award className="h-4 w-4 mr-2" />
+          )}
+          Claim Reward
+        </Button>
+      )
+    }
+
+    if (module.locked) {
+      return <Lock className="h-5 w-5 text-gray-400" />
+    }
+
+    return (
+      <Button size="sm" variant="outline">
+        Start
+      </Button>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      <Toaster position="top-right" richColors />
       {/* Header */}
       <header className="border-b border-border bg-white">
         <div className="container mx-auto px-4 py-4">
@@ -294,7 +369,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                 <CardHeader>
                   <CardTitle>Course Modules</CardTitle>
                   <CardDescription>
-                    {modules.length} modules • {completedModules} completed
+                    {modules.length} modules • {completedModulesCount} completed
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -303,7 +378,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
                       <div
                         key={module.id}
                         className={`flex items-center gap-4 p-4 border border-border rounded-lg ${
-                          module.locked ? "opacity-50" : ""
+                          module.locked && !moduleStatus?.completed[index] ? "opacity-50" : ""
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -320,15 +395,7 @@ export default function CourseDetailPage({ params }: { params: { id: string } })
 
                         <div className="flex items-center gap-4">
                           <div className="text-sm text-muted-foreground">{module.duration}</div>
-                          {module.completed ? (
-                            <CheckCircle className="h-5 w-5 text-green-600" />
-                          ) : module.locked ? (
-                            <Lock className="h-5 w-5 text-gray-400" />
-                          ) : (
-                            <Button size="sm" variant="outline">
-                              Start
-                            </Button>
-                          )}
+                          {renderModuleStatus(module, index)}
                         </div>
                       </div>
                     ))}

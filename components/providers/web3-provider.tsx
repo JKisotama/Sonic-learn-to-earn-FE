@@ -13,14 +13,8 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <ConnectKitProvider
-          theme="minimal"
+          theme="retro"
           mode="light"
-          customTheme={{
-            "--ck-font-family": "ui-sans-serif, system-ui, sans-serif",
-            "--ck-border-radius": "6px",
-            "--ck-primary-button-background": "rgb(102, 102, 102)",
-            "--ck-primary-button-hover-background": "rgb(82, 82, 82)",
-          }}
         >
           {children}
         </ConnectKitProvider>

@@ -3,8 +3,27 @@
 import { useState, useCallback, useEffect } from "react"
 import { ethers } from "ethers"
 import { useWeb3 } from "./use-web3"
-import { useConfig } from "./use-config"
-import { LEARN_TO_EARN_ABI, SUT_TOKEN_ABI } from "@/lib/web3-config"
+import { getChainContracts } from "@/lib/web3-config"
+
+// Helper to get contracts for the current network
+const useNetworkContracts = () => {
+  const { provider } = useWeb3()
+  const [contracts, setContracts] = useState<ReturnType<typeof getChainContracts> | null>(null)
+
+  useEffect(() => {
+    const fetchContracts = async () => {
+      if (provider) {
+        const network = await provider.getNetwork()
+        setContracts(getChainContracts(Number(network.chainId)))
+      } else {
+        setContracts(null)
+      }
+    }
+    fetchContracts()
+  }, [provider])
+
+  return contracts
+}
 
 export function useLearnToEarn() {
   const [isClaimingReward, setIsClaimingReward] = useState(false)
@@ -12,47 +31,46 @@ export function useLearnToEarn() {
   const [error, setError] = useState<string>("")
 
   const { signer, provider } = useWeb3()
-  const { config } = useConfig()
+  const contracts = useNetworkContracts()
 
   const claimReward = useCallback(
-    async (moduleId: number) => {
-      if (!signer || !config?.contracts.LEARN_TO_EARN) {
-        throw new Error("Wallet not connected or contract address not available")
+    async (courseId: number) => {
+      if (!signer || !provider || !contracts?.courseCompletionTracker) {
+        throw new Error("Wallet not connected or contract not available on this network")
       }
 
       try {
         setIsClaimingReward(true)
         setError("")
-        console.log("[v0] Starting SET token claim process for module:", moduleId)
+        console.log("[v1] Starting SET token claim process for course:", courseId)
 
-        const network = await provider?.getNetwork()
+        const network = await provider.getNetwork()
         if (!network) {
           throw new Error("Unable to detect network")
         }
+        console.log("[v1] Current network:", network.chainId)
 
-        console.log("[v0] Current network:", network.chainId)
-
-        // Check if we're on the correct network (Sepolia testnet)
-        if (network.chainId !== 11155111n) {
+        if (network.chainId !== BigInt(11155111)) {
           throw new Error("Please switch to Sepolia testnet to claim SET tokens")
         }
 
-        const contract = new ethers.Contract(config.contracts.LEARN_TO_EARN, LEARN_TO_EARN_ABI, signer)
+        const { address, abi } = contracts.courseCompletionTracker
+        const contract = new ethers.Contract(address, abi, signer)
 
-        console.log("[v0] Estimating gas for SET token claim...")
-        const gasEstimate = await contract.claimReward.estimateGas(moduleId)
-        const gasLimit = (gasEstimate * 120n) / 100n // Add 20% buffer
-        console.log("[v0] Gas estimate:", gasEstimate.toString(), "Gas limit:", gasLimit.toString())
+        console.log("[v1] Estimating gas for SET token claim...")
+        // Note: Smart contract function is claim_reward
+        const gasEstimate = await contract.claim_reward.estimateGas(courseId)
+        const gasLimit = (gasEstimate * BigInt(120)) / BigInt(100) // Add 20% buffer
+        console.log("[v1] Gas estimate:", gasEstimate.toString(), "Gas limit:", gasLimit.toString())
 
-        console.log("[v0] Executing SET token claim transaction...")
-        const tx = await contract.claimReward(moduleId, { gasLimit })
+        console.log("[v1] Executing SET token claim transaction...")
+        const tx = await contract.claim_reward(courseId, { gasLimit })
         setTransactionHash(tx.hash)
-        console.log("[v0] SET token claim transaction submitted:", tx.hash)
+        console.log("[v1] SET token claim transaction submitted:", tx.hash)
 
-        // Wait for transaction confirmation
-        console.log("[v0] Waiting for SET token claim confirmation...")
+        console.log("[v1] Waiting for SET token claim confirmation...")
         const receipt = await tx.wait()
-        console.log("[v0] SET token claim confirmed in block:", receipt.blockNumber)
+        console.log("[v1] SET token claim confirmed in block:", receipt.blockNumber)
 
         return tx.hash
       } catch (err: any) {
@@ -71,58 +89,17 @@ export function useLearnToEarn() {
         }
 
         setError(errorMessage)
-        console.log("[v0] SET token claim error:", errorMessage)
+        console.error("[v1] SET token claim error:", err)
         throw new Error(errorMessage)
       } finally {
         setIsClaimingReward(false)
       }
     },
-    [signer, provider, config],
-  )
-
-  const canClaimReward = useCallback(
-    async (userAddress: string, moduleId: number) => {
-      if (!provider || !config?.contracts.LEARN_TO_EARN) {
-        return false
-      }
-
-      try {
-        const contract = new ethers.Contract(config.contracts.LEARN_TO_EARN, LEARN_TO_EARN_ABI, provider)
-
-        return await contract.canClaimReward(userAddress, moduleId)
-      } catch (err) {
-        console.error("Error checking claim status:", err)
-        return false
-      }
-    },
-    [provider, config],
-  )
-
-  const getTokenBalance = useCallback(
-    async (userAddress: string) => {
-      if (!provider || !config?.contracts.SUT_TOKEN) {
-        return 0
-      }
-
-      try {
-        const contract = new ethers.Contract(config.contracts.SUT_TOKEN, SUT_TOKEN_ABI, provider)
-
-        const balance = await contract.balanceOf(userAddress)
-        const decimals = await contract.decimals()
-
-        return Number.parseFloat(ethers.formatUnits(balance, decimals))
-      } catch (err) {
-        console.error("Error getting token balance:", err)
-        return 0
-      }
-    },
-    [provider, config],
+    [signer, provider, contracts],
   )
 
   return {
     claimReward,
-    canClaimReward,
-    getTokenBalance,
     isClaimingReward,
     transactionHash,
     error,
@@ -135,10 +112,10 @@ export function useTokenBalance(userAddress: string) {
   const [error, setError] = useState<string | null>(null)
 
   const { provider } = useWeb3()
-  const { config } = useConfig()
+  const contracts = useNetworkContracts()
 
   const refetch = useCallback(async () => {
-    if (!provider || !config?.contracts.SUT_TOKEN || !userAddress) {
+    if (!provider || !contracts?.sonicEduToken || !userAddress) {
       setBalance(0)
       return
     }
@@ -147,7 +124,8 @@ export function useTokenBalance(userAddress: string) {
       setIsLoading(true)
       setError(null)
 
-      const contract = new ethers.Contract(config.contracts.SUT_TOKEN, SUT_TOKEN_ABI, provider)
+      const { address, abi } = contracts.sonicEduToken
+      const contract = new ethers.Contract(address, abi, provider)
       const balanceResult = await contract.balanceOf(userAddress)
       const decimals = await contract.decimals()
 
@@ -160,7 +138,7 @@ export function useTokenBalance(userAddress: string) {
     } finally {
       setIsLoading(false)
     }
-  }, [provider, config, userAddress])
+  }, [provider, contracts, userAddress])
 
   useEffect(() => {
     refetch()
@@ -183,10 +161,10 @@ export function useModuleStatus(userAddress: string, moduleIds: number[]) {
   const [error, setError] = useState<string | null>(null)
 
   const { provider } = useWeb3()
-  const { config } = useConfig()
+  const contracts = useNetworkContracts()
 
   const refetch = useCallback(async () => {
-    if (!provider || !config?.contracts.LEARN_TO_EARN || !userAddress || moduleIds.length === 0) {
+    if (!provider || !contracts?.courseCompletionTracker || !userAddress || moduleIds.length === 0) {
       setModuleStatus(null)
       return
     }
@@ -195,12 +173,19 @@ export function useModuleStatus(userAddress: string, moduleIds: number[]) {
       setIsLoading(true)
       setError(null)
 
-      const contract = new ethers.Contract(config.contracts.LEARN_TO_EARN, LEARN_TO_EARN_ABI, provider)
-      const result = await contract.getCompletedModules(userAddress, moduleIds)
+      const { address, abi } = contracts.courseCompletionTracker
+      const contract = new ethers.Contract(address, abi, provider)
+
+      // Call has_completed and has_claimed_reward for each module
+      const completedPromises = moduleIds.map((id) => contract.has_completed(userAddress, id))
+      const claimedPromises = moduleIds.map((id) => contract.has_claimed_reward(userAddress, id))
+
+      const completedResults = await Promise.all(completedPromises)
+      const claimedResults = await Promise.all(claimedPromises)
 
       setModuleStatus({
-        completed: result[0],
-        claimed: result[1],
+        completed: completedResults,
+        claimed: claimedResults,
       })
     } catch (err: any) {
       console.error("Error getting module status:", err)
@@ -209,7 +194,7 @@ export function useModuleStatus(userAddress: string, moduleIds: number[]) {
     } finally {
       setIsLoading(false)
     }
-  }, [provider, config, userAddress, moduleIds])
+  }, [provider, contracts, userAddress, moduleIds])
 
   useEffect(() => {
     refetch()
@@ -217,49 +202,6 @@ export function useModuleStatus(userAddress: string, moduleIds: number[]) {
 
   return {
     moduleStatus,
-    isLoading,
-    error,
-    refetch,
-  }
-}
-
-export function useCanClaimReward(userAddress: string, moduleId: number) {
-  const [canClaim, setCanClaim] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const { provider } = useWeb3()
-  const { config } = useConfig()
-
-  const refetch = useCallback(async () => {
-    if (!provider || !config?.contracts.LEARN_TO_EARN || !userAddress || moduleId <= 0) {
-      setCanClaim(false)
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      const contract = new ethers.Contract(config.contracts.LEARN_TO_EARN, LEARN_TO_EARN_ABI, provider)
-      const result = await contract.canClaimReward(userAddress, moduleId)
-
-      setCanClaim(result)
-    } catch (err: any) {
-      console.error("Error checking claim status:", err)
-      setError(err.message || "Failed to check claim status")
-      setCanClaim(false)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [provider, config, userAddress, moduleId])
-
-  useEffect(() => {
-    refetch()
-  }, [refetch])
-
-  return {
-    canClaim,
     isLoading,
     error,
     refetch,

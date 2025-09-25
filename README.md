@@ -17,7 +17,7 @@ A decentralized learning platform where students can earn SUT (Sonic University 
 - Handles token reward distribution
 - Tracks student progress and claims
 
-### SonicUniversityToken (SUT)
+### SonicUniversityToken (SET)
 - ERC-20 token for rewards
 - Mintable by contract owner (university)
 - Used for incentivizing learning
@@ -50,13 +50,13 @@ npm run dev
 1. **Connect Wallet**: Click "Connect Wallet" to connect your Web3 wallet
 2. **View Modules**: Browse available course modules and their rewards
 3. **Complete Courses**: Complete course modules (marked by admin)
-4. **Claim Rewards**: Click "Claim" to receive SUT tokens for completed modules
+4. **Claim Rewards**: Click "Claim" to receive SET tokens for completed modules
 5. **Track Progress**: Monitor your token balance and learning progress
 
 ## Architecture
 
 - **Frontend**: Next.js 14 with TypeScript and Tailwind CSS
-- **Web3 Integration**: wagmi + viem for Ethereum interactions
+- **Web3 Integration**: wagmi + etherJS for Ethereum interactions
 - **Smart Contracts**: Solidity with OpenZeppelin libraries
 - **State Management**: React hooks with TanStack Query
 

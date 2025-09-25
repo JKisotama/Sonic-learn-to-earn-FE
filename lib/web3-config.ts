@@ -1,23 +1,5 @@
-// Simplified Web3 configuration using ethers.js only
-export const CONTRACT_ADDRESSES = {
-  LEARN_TO_EARN: "0x0000000000000000000000000000000000000000",
-  SUT_TOKEN: "0x0000000000000000000000000000000000000000",
-}
-
-// Contract ABIs (simplified for demo)
-export const LEARN_TO_EARN_ABI = [
-  "function claimReward(uint256 moduleId)",
-  "function canClaimReward(address student, uint256 moduleId) view returns (bool)",
-  "function getCompletedModules(address student, uint256[] moduleIds) view returns (bool[] completed, bool[] claimed)",
-  "function moduleRewards(uint256 moduleId) view returns (uint256)",
-  "event RewardClaimed(address indexed student, uint256 indexed moduleId, uint256 amount)",
-]
-
-export const SUT_TOKEN_ABI = [
-  "function balanceOf(address account) view returns (uint256)",
-  "function symbol() view returns (string)",
-  "function decimals() view returns (uint8)",
-]
+import CourseTrackerCompletionABI from "../abi/CourseTrackerCompletionABI.json"
+import SonicEduTokenABI from "../abi/SonicEduTokenABI.json"
 
 // Network configurations
 export const NETWORKS = {
@@ -29,11 +11,49 @@ export const NETWORKS = {
   sepolia: {
     chainId: 11155111,
     name: "Sepolia Testnet",
-    rpcUrl: "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+    rpcUrl: "https://eth-sepolia.g.alchemy.com/v2/pomEuJpkfXQWZTQY9wUrZ",
   },
-  hardhat: {
+  foundry: {
     chainId: 31337,
-    name: "Hardhat Local",
+    name: "Foundry Local",
     rpcUrl: "http://127.0.0.1:8545",
   },
+}
+
+const contracts = {
+  courseCompletionTracker: {
+    abi: CourseTrackerCompletionABI,
+    addresses: {
+      [NETWORKS.sepolia.chainId]: "0x77a18B3CaFe43f3FfF0a64599Cb642CC518bc90f",
+      [NETWORKS.foundry.chainId]: "0x0000000000000000000000000000000000000000", 
+    },
+  },
+  sonicEduToken: {
+    abi: SonicEduTokenABI,
+    addresses: {
+      [NETWORKS.sepolia.chainId]: "0x2b56CC1663B7DbB49A01f6118102f05CDeb4e8C9",
+      [NETWORKS.foundry.chainId]: "0x0000000000000000000000000000000000000000", 
+    },
+  },
+} as const
+
+type ContractName = keyof typeof contracts
+
+export const getChainContracts = (chainId: number) => {
+  const result: Record<ContractName, { address: string; abi: any }> = {} as any
+
+  for (const name in contracts) {
+    const contractName = name as ContractName
+    const contract = contracts[contractName]
+    const address = contract.addresses[chainId]
+
+    if (address) {
+      result[contractName] = {
+        address,
+        abi: contract.abi,
+      }
+    }
+  }
+
+  return result
 }
