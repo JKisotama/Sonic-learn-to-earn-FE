@@ -6,7 +6,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ConnectKitProvider } from "connectkit"
 import { config } from "@/lib/wagmi-config"
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+})
 
 export function Web3Provider({ children }: { children: ReactNode }) {
   return (
@@ -15,6 +21,9 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         <ConnectKitProvider
           theme="retro"
           mode="light"
+          options={{
+            initialChainId: 0,
+          }}
         >
           {children}
         </ConnectKitProvider>

@@ -151,7 +151,7 @@ export default function CoursesPage() {
       case "completed":
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case "enrolled":
-        return <Play className="h-4 w-4 text-blue-600" />
+        return <Play className="h-4 w-4 text-primary" />
       case "locked":
         return <Lock className="h-4 w-4 text-gray-400" />
       default:

@@ -5,22 +5,20 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { GraduationCap, BookOpen, User, Home, Menu, LogIn, UserPlus } from "lucide-react"
+import { GraduationCap, BookOpen, User, Home, Menu, Shield } from "lucide-react"
 import { WalletConnection } from "./wallet-connection"
+import { useAdminFunctions } from "@/hooks/use-admin-functions"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const { isOwner } = useAdminFunctions()
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
     { href: "/courses", label: "Courses", icon: BookOpen },
     { href: "/profile", label: "Profile", icon: User },
-  ]
-
-  const authItems = [
-    { href: "/login", label: "Sign In", icon: LogIn },
-    { href: "/register", label: "Register", icon: UserPlus },
+    { href: "/admin", label: "Admin", icon: Shield, requiresOwner: true },
   ]
 
   return (
@@ -41,6 +39,7 @@ export function Navigation() {
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
+              const isAdminItem = item.requiresOwner
               return (
                 <Link
                   key={item.href}
@@ -48,34 +47,25 @@ export function Navigation() {
                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      : isAdminItem
+                        ? isOwner
+                          ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          : "text-orange-400 hover:text-orange-500 hover:bg-orange-50/50"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
+                  title={isAdminItem && !isOwner ? "Requires contract owner privileges" : undefined}
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
+                  {isAdminItem && !isOwner && <span className="text-xs opacity-60">🔒</span>}
                 </Link>
               )
             })}
           </nav>
 
-          {/* Desktop Actions - Prioritize wallet connection over auth */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-4">
+          {/* Desktop Actions - Only wallet connection */}
+          <div className="hidden md:flex items-center">
             <WalletConnection />
-            <div className="flex items-center gap-2 opacity-60">
-              <span className="text-xs text-muted-foreground hidden lg:inline">Optional:</span>
-              {authItems.map((item) => {
-                const Icon = item.icon
-                return (
-                  <Link key={item.href} href={item.href}>
-                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                      <Icon className="h-4 w-4 mr-2" />
-                      <span className="hidden lg:inline">{item.label}</span>
-                      <span className="lg:hidden">{item.label === "Sign In" ? "Login" : "Join"}</span>
-                    </Button>
-                  </Link>
-                )
-              })}
-            </div>
           </div>
 
           {/* Mobile Menu */}
@@ -93,6 +83,7 @@ export function Navigation() {
                   {navItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === item.href
+                    const isAdminItem = item.requiresOwner
                     return (
                       <Link
                         key={item.href}
@@ -101,41 +92,36 @@ export function Navigation() {
                         className={`nav-item flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium transition-colors ${
                           isActive
                             ? "bg-primary/10 text-primary"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            : isAdminItem
+                              ? isOwner
+                                ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                : "text-orange-400 hover:text-orange-500 hover:bg-orange-50/50"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         }`}
                       >
                         <Icon className="h-5 w-5" />
                         {item.label}
+                        {isAdminItem && (
+                          <span
+                            className={`ml-auto text-xs px-2 py-1 rounded-full ${
+                              isOwner ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-500"
+                            }`}
+                          >
+                            {isOwner ? "Owner" : "🔒 Owner Only"}
+                          </span>
+                        )}
                       </Link>
                     )
                   })}
                 </nav>
 
-                {/* Mobile Wallet Connection - Emphasize wallet connection */}
+                {/* Mobile Wallet Connection */}
                 <div className="border-t border-border pt-6">
                   <div className="mb-2">
                     <p className="text-sm font-medium text-foreground mb-1">Connect to Start Learning</p>
                     <p className="text-xs text-muted-foreground mb-3">Connect your wallet to claim SET tokens</p>
                   </div>
                   <WalletConnection />
-                </div>
-
-                {/* Mobile Auth Actions - Make auth optional */}
-                <div className="border-t border-border pt-4">
-                  <p className="text-xs text-muted-foreground mb-3">Optional Account Features:</p>
-                  <div className="flex flex-col gap-2">
-                    {authItems.map((item) => {
-                      const Icon = item.icon
-                      return (
-                        <Link key={item.href} href={item.href} onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" className="w-full justify-start text-muted-foreground">
-                            <Icon className="h-4 w-4 mr-2" />
-                            {item.label}
-                          </Button>
-                        </Link>
-                      )
-                    })}
-                  </div>
                 </div>
               </div>
             </SheetContent>

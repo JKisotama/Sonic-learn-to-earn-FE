@@ -91,7 +91,7 @@ export function LearnToEarnDashboard() {
                 </Button>
               </Link>
               {!isConnected && (
-                <Link href="/register" className="w-full sm:w-auto">
+                <Link href="/courses" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto">
                     Get Started
                     <ArrowRight className="h-4 w-4 ml-2" />

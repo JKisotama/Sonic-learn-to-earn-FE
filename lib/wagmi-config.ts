@@ -6,7 +6,6 @@ export const config = createConfig(
   getDefaultConfig({
     chains: [sepolia, mainnet],
     transports: {
-      // RPC URL for each chain
       [mainnet.id]: http(),
       [sepolia.id]: http(),
     },
@@ -17,7 +16,18 @@ export const config = createConfig(
     // Required App Info
     appName: "Sonic University - Learn to Earn",
     appDescription: "Complete blockchain courses and earn SET tokens for your achievements",
-    appUrl: "https://learn-to-earn.vercel.app",
-    appIcon: "https://learn-to-earn.vercel.app/favicon.ico",
+    appUrl: typeof window !== "undefined" ? window.location.origin : "https://learn-to-earn.vercel.app",
+    appIcon:
+      typeof window !== "undefined"
+        ? `${window.location.origin}/favicon.ico`
+        : "https://learn-to-earn.vercel.app/favicon.ico",
+
+    ssr: true,
   }),
 )
+
+declare module "wagmi" {
+  interface Register {
+    config: typeof config
+  }
+}
