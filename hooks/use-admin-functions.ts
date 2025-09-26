@@ -25,11 +25,16 @@ const useNetworkContracts = () => {
   return contracts
 }
 
-export function useAdminFunctions() {
+interface UseAdminFunctionsProps {
+  onTransactionSuccess?: () => void
+}
+
+export function useAdminFunctions({ onTransactionSuccess }: UseAdminFunctionsProps = {}) {
   const [isOwner, setIsOwner] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isAddingCourse, setIsAddingCourse] = useState(false)
   const [isMarkingComplete, setIsMarkingComplete] = useState(false)
+  const [isRemovingCourse, setIsRemovingCourse] = useState(false)
   const [transactionHash, setTransactionHash] = useState<string>("")
   const [error, setError] = useState<string>("")
 
@@ -114,6 +119,7 @@ export function useAdminFunctions() {
         const receipt = await tx.wait()
         console.log("[v0] Course added successfully in block:", receipt.blockNumber)
 
+        onTransactionSuccess?.()
         return tx.hash
       } catch (err: any) {
         let errorMessage = "Failed to add course"
@@ -180,6 +186,7 @@ export function useAdminFunctions() {
         const receipt = await tx.wait()
         console.log("[v0] Completion marked successfully in block:", receipt.blockNumber)
 
+        onTransactionSuccess?.()
         return tx.hash
       } catch (err: any) {
         let errorMessage = "Failed to mark completion"
@@ -206,6 +213,66 @@ export function useAdminFunctions() {
     [signer, provider, contracts, isOwner],
   )
 
+  // Remove a course
+  const removeCourse = useCallback(
+    async (courseId: number) => {
+      if (!signer || !provider || !contracts?.courseCompletionTracker) {
+        throw new Error("Wallet not connected or contract not available")
+      }
+
+      if (!isOwner) {
+        throw new Error("Only the contract owner can remove courses")
+      }
+
+      try {
+        setIsRemovingCourse(true)
+        setError("")
+        console.log("[v0] Removing course:", courseId)
+
+        const network = await provider.getNetwork()
+        if (network.chainId !== BigInt(11155111)) {
+          throw new Error("Please switch to Sepolia testnet")
+        }
+
+        const { address, abi } = contracts.courseCompletionTracker
+        const contract = new ethers.Contract(address, abi, signer)
+
+        console.log("[v0] Estimating gas for delete_course...")
+        const gasEstimate = await contract.delete_course.estimateGas(courseId)
+        const gasLimit = (gasEstimate * BigInt(120)) / BigInt(100) // Add 20% buffer
+
+        console.log("[v0] Executing delete_course transaction...")
+        const tx = await contract.delete_course(courseId, { gasLimit })
+        setTransactionHash(tx.hash)
+        console.log("[v0] Remove course transaction submitted:", tx.hash)
+
+        console.log("[v0] Waiting for confirmation...")
+        const receipt = await tx.wait()
+        console.log("[v0] Course removed successfully in block:", receipt.blockNumber)
+
+        onTransactionSuccess?.()
+        return tx.hash
+      } catch (err: any) {
+        let errorMessage = "Failed to remove course"
+
+        if (err.message.includes("user rejected")) {
+          errorMessage = "Transaction was rejected by user"
+        } else if (err.reason) {
+          errorMessage = `Failed to remove course: ${err.reason}`
+        } else if (err.message) {
+          errorMessage = `Failed to remove course: ${err.message}`
+        }
+
+        setError(errorMessage)
+        console.error("[v0] Remove course error:", err)
+        throw new Error(errorMessage)
+      } finally {
+        setIsRemovingCourse(false)
+      }
+    },
+    [signer, provider, contracts, isOwner],
+  )
+
   // Check ownership when dependencies change
   useEffect(() => {
     checkOwnership()
@@ -214,10 +281,12 @@ export function useAdminFunctions() {
   return {
     addCourse,
     markCompletion,
+    removeCourse,
     isOwner,
     isLoading,
     isAddingCourse,
     isMarkingComplete,
+    isRemovingCourse,
     transactionHash,
     error,
   }

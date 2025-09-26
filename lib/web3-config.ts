@@ -24,14 +24,14 @@ const contracts = {
   courseCompletionTracker: {
     abi: CourseTrackerCompletionABI,
     addresses: {
-      [NETWORKS.sepolia.chainId]: "0x77a18B3CaFe43f3FfF0a64599Cb642CC518bc90f",
+      [NETWORKS.sepolia.chainId]: "0x0F750c6490697e7eb1c39b9CF57e63e7730E6C57",
       [NETWORKS.foundry.chainId]: "0x0000000000000000000000000000000000000000", 
     },
   },
   sonicEduToken: {
     abi: SonicEduTokenABI,
     addresses: {
-      [NETWORKS.sepolia.chainId]: "0x2b56CC1663B7DbB49A01f6118102f05CDeb4e8C9",
+      [NETWORKS.sepolia.chainId]: "0xB01BDF2cd806ef5538294bdef9f2510c1bBb2A0e",
       [NETWORKS.foundry.chainId]: "0x0000000000000000000000000000000000000000", 
     },
   },

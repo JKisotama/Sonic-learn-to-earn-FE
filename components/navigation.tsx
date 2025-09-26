@@ -16,7 +16,7 @@ export function Navigation() {
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
-    { href: "/courses", label: "Courses", icon: BookOpen },
+    { href: "/simple-courses", label: "Courses", icon: BookOpen },
     { href: "/profile", label: "Profile", icon: User },
     { href: "/admin", label: "Admin", icon: Shield, requiresOwner: true },
   ]

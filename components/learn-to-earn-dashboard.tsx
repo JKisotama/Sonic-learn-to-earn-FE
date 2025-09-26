@@ -84,7 +84,7 @@ export function LearnToEarnDashboard() {
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4 sm:px-0">
               {!isConnected && <WalletConnection />}
-              <Link href="/courses" className="w-full sm:w-auto">
+              <Link href="/simple-courses" className="w-full sm:w-auto">
                 <Button variant="outline" size="lg" className="w-full sm:w-auto bg-transparent">
                   <BookOpen className="h-4 w-4 mr-2" />
                   Browse Courses
@@ -187,33 +187,7 @@ export function LearnToEarnDashboard() {
             </Card>
           </div>
 
-          {/* Course Modules */}
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">Featured Modules</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto mb-6 px-4 sm:px-0">
-                Complete modules to earn SET tokens and advance your blockchain knowledge
-              </p>
-              <Link href="/courses">
-                <Button variant="outline">
-                  View All Courses
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
-
-            <div className="course-grid grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {modules.map((module) => (
-                <ModuleCard
-                  key={module.id}
-                  module={module}
-                  isConnected={isConnected}
-                  userAddress={address || ""}
-                  onRewardClaimed={() => {}}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Course Modules (Removed) */}
         </div>
       </section>
     </div>

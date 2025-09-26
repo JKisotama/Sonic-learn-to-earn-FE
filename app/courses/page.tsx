@@ -1,187 +1,100 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import { ArrowLeft, BookOpen, Clock, Users, Star, Search, GraduationCap, Play, CheckCircle, Lock } from "lucide-react"
-
-interface Course {
-  id: number
-  title: string
-  description: string
-  instructor: string
-  duration: string
-  difficulty: "Beginner" | "Intermediate" | "Advanced"
-  category: string
-  reward: number
-  enrolled: number
-  maxEnrollment: number
-  rating: number
-  status: "available" | "enrolled" | "completed" | "locked"
-  prerequisites?: string[]
-  image: string
-}
+import {
+  ArrowLeft,
+  BookOpen,
+  Clock,
+  Users,
+  Star,
+  Search,
+  GraduationCap,
+  CheckCircle,
+  Coins,
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+} from "lucide-react"
+import { useCourses, CombinedCourse } from "@/hooks/use-courses"
+import { useStudentFunctions } from "@/hooks/use-student-functions"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function CoursesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedDifficulty, setSelectedDifficulty] = useState("all")
+  const [claimingId, setClaimingId] = useState<number | null>(null)
 
-  const courses: Course[] = [
-    {
-      id: 1,
-      title: "Introduction to Blockchain",
-      description:
-        "Learn the fundamentals of blockchain technology, including how it works, its applications, and its potential impact on various industries.",
-      instructor: "Dr. Sarah Chen",
-      duration: "4 weeks",
-      difficulty: "Beginner",
-      category: "Blockchain",
-      reward: 100,
-      enrolled: 1247,
-      maxEnrollment: 2000,
-      rating: 4.8,
-      status: "completed",
-      image: "/blockchain-network.png",
-    },
-    {
-      id: 2,
-      title: "Smart Contract Development",
-      description:
-        "Master the art of writing secure and efficient smart contracts using Solidity. Build real-world DApps and understand best practices.",
-      instructor: "Prof. Michael Rodriguez",
-      duration: "6 weeks",
-      difficulty: "Intermediate",
-      category: "Development",
-      reward: 200,
-      enrolled: 892,
-      maxEnrollment: 1500,
-      rating: 4.9,
-      status: "enrolled",
-      prerequisites: ["Introduction to Blockchain"],
-      image: "/smart-contracts-coding.jpg",
-    },
-    {
-      id: 3,
-      title: "DeFi Protocol Design",
-      description:
-        "Explore decentralized finance protocols, yield farming, liquidity pools, and advanced DeFi mechanisms.",
-      instructor: "Dr. Emily Watson",
-      duration: "8 weeks",
-      difficulty: "Advanced",
-      category: "DeFi",
-      reward: 300,
-      enrolled: 456,
-      maxEnrollment: 800,
-      rating: 4.7,
-      status: "locked",
-      prerequisites: ["Smart Contract Development", "Financial Markets"],
-      image: "/defi-protocol-design.jpg",
-    },
-    {
-      id: 4,
-      title: "NFT Creation and Marketplace",
-      description:
-        "Learn how to create, mint, and trade NFTs. Build your own NFT marketplace and understand the digital art economy.",
-      instructor: "Alex Thompson",
-      duration: "5 weeks",
-      difficulty: "Intermediate",
-      category: "NFT",
-      reward: 175,
-      enrolled: 634,
-      maxEnrollment: 1200,
-      rating: 4.6,
-      status: "available",
-      image: "/nft-digital-art.jpg",
-    },
-    {
-      id: 5,
-      title: "Web3 Frontend Development",
-      description:
-        "Build modern Web3 applications using React, ethers.js, and popular Web3 libraries. Connect to blockchain networks.",
-      instructor: "Jordan Kim",
-      duration: "7 weeks",
-      difficulty: "Intermediate",
-      category: "Development",
-      reward: 225,
-      enrolled: 789,
-      maxEnrollment: 1000,
-      rating: 4.8,
-      status: "available",
-      prerequisites: ["Introduction to Blockchain"],
-      image: "/web3-frontend.png",
-    },
-    {
-      id: 6,
-      title: "Cryptocurrency Trading Fundamentals",
-      description:
-        "Understand market analysis, trading strategies, risk management, and the psychology of cryptocurrency trading.",
-      instructor: "Maria Gonzalez",
-      duration: "4 weeks",
-      difficulty: "Beginner",
-      category: "Trading",
-      reward: 125,
-      enrolled: 1156,
-      maxEnrollment: 1800,
-      rating: 4.5,
-      status: "available",
-      image: "/cryptocurrency-trading.png",
-    },
-  ]
+  const { courses, isLoading, error, refetch } = useCourses()
+  const { claimReward, isClaiming } = useStudentFunctions()
 
-  const categories = ["all", "Blockchain", "Development", "DeFi", "NFT", "Trading"]
+  const categories = useMemo(() => ["all", ...Array.from(new Set(courses.map((c) => c.category)))], [courses])
   const difficulties = ["all", "Beginner", "Intermediate", "Advanced"]
 
-  const filteredCourses = courses.filter((course) => {
-    const matchesSearch =
-      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || course.category === selectedCategory
-    const matchesDifficulty = selectedDifficulty === "all" || course.difficulty === selectedDifficulty
+  const filteredCourses = useMemo(
+    () =>
+      courses
+        .filter((course) => course.isCreated) // Only show courses created by admin
+        .filter((course) => {
+          const matchesSearch =
+            course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            course.description.toLowerCase().includes(searchTerm.toLowerCase())
+          const matchesCategory = selectedCategory === "all" || course.category === selectedCategory
+          const matchesDifficulty = selectedDifficulty === "all" || course.difficulty === selectedDifficulty
+          return matchesSearch && matchesCategory && matchesDifficulty
+        }),
+    [courses, searchTerm, selectedCategory, selectedDifficulty],
+  )
 
-    return matchesSearch && matchesCategory && matchesDifficulty
-  })
-
-  const getStatusIcon = (status: Course["status"]) => {
+  const getStatusIcon = (status: CombinedCourse["status"]) => {
     switch (status) {
       case "completed":
         return <CheckCircle className="h-4 w-4 text-green-600" />
-      case "enrolled":
-        return <Play className="h-4 w-4 text-primary" />
-      case "locked":
-        return <Lock className="h-4 w-4 text-gray-400" />
+      case "claimable":
+        return <Coins className="h-4 w-4 text-yellow-500" />
       default:
         return <BookOpen className="h-4 w-4 text-primary" />
     }
   }
 
-  const getStatusText = (status: Course["status"]) => {
+  const getStatusText = (status: CombinedCourse["status"]) => {
     switch (status) {
       case "completed":
-        return "Completed"
-      case "enrolled":
-        return "Continue Learning"
-      case "locked":
-        return "Prerequisites Required"
+        return "Reward Claimed"
+      case "claimable":
+        return "Claim Reward"
       default:
-        return "Enroll Now"
+        return "View Course"
     }
   }
 
-  const getStatusVariant = (status: Course["status"]) => {
+  const handleClaimReward = async (courseId: number) => {
+    setClaimingId(courseId)
+    try {
+      await claimReward(courseId)
+      refetch() // Refetch course data to update the status
+    } catch (err) {
+      console.error(`Failed to claim reward for course ${courseId}:`, err)
+      // Error is already handled and displayed by the hook, but we can add more specific UI feedback here if needed
+    } finally {
+      setClaimingId(null)
+    }
+  }
+
+  const getStatusVariant = (status: CombinedCourse["status"]) => {
     switch (status) {
       case "completed":
         return "secondary" as const
-      case "enrolled":
+      case "claimable":
         return "default" as const
-      case "locked":
-        return "outline" as const
       default:
-        return "default" as const
+        return "outline" as const
     }
   }
 
@@ -258,104 +171,138 @@ export default function CoursesPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <Button variant="outline" onClick={refetch} disabled={isLoading}>
+                      <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                      <span className="ml-2 hidden sm:inline">Refresh</span>
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="course-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredCourses.map((course) => (
-              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow card-interactive">
-                <div className="aspect-video bg-muted">
-                  <img
-                    src={course.image || "/placeholder.svg"}
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <CardHeader className="p-4 sm:p-6">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
-                    <Badge variant="outline" className="shrink-0 text-xs">
-                      +{course.reward} SET
-                    </Badge>
-                  </div>
-                  <CardDescription className="line-clamp-3 text-sm">{course.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6 pt-0">
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="hidden sm:inline">{course.duration}</span>
-                        <span className="sm:hidden">{course.duration.replace(" weeks", "w")}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="hidden sm:inline">
-                          {course.enrolled}/{course.maxEnrollment}
-                        </span>
-                        <span className="sm:hidden">{course.enrolled}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-current text-yellow-500" />
-                        {course.rating}
-                      </div>
-                    </div>
-
-                    {/* Instructor and Difficulty */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm text-muted-foreground truncate">by {course.instructor}</span>
-                      <Badge
-                        variant={
-                          course.difficulty === "Beginner"
-                            ? "secondary"
-                            : course.difficulty === "Intermediate"
-                              ? "default"
-                              : "destructive"
-                        }
-                        className="text-xs"
-                      >
-                        {course.difficulty}
-                      </Badge>
-                    </div>
-
-                    {/* Prerequisites */}
-                    {course.prerequisites && course.prerequisites.length > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        Prerequisites: {course.prerequisites.join(", ")}
-                      </div>
-                    )}
-
-                    {/* Action Button */}
-                    <Link href={`/courses/${course.id}`}>
-                      <Button
-                        className="w-full"
-                        variant={getStatusVariant(course.status)}
-                        disabled={course.status === "locked"}
-                      >
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(course.status)}
-                          <span className="text-sm">{getStatusText(course.status)}</span>
-                        </div>
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* No Results */}
-          {filteredCourses.length === 0 && (
+          {isLoading ? (
             <div className="text-center py-12">
-              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-medium text-foreground mb-2">No courses found</h3>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Try adjusting your search criteria or browse all available courses.
-              </p>
+              <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+              <p>Loading on-chain course data...</p>
             </div>
+          ) : error ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              <div className="course-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {filteredCourses.map((course) => (
+                  <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow card-interactive">
+                    <div className="aspect-video bg-muted">
+                      <img
+                        src={course.image || "/placeholder.svg"}
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <CardHeader className="p-4 sm:p-6">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
+                        <Badge variant="outline" className="shrink-0 text-xs">
+                          +{course.reward} SET
+                        </Badge>
+                      </div>
+                      <CardDescription className="line-clamp-3 text-sm">{course.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6 pt-0">
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">{course.duration}</span>
+                            <span className="sm:hidden">{course.duration.replace(" weeks", "w")}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">
+                              {course.enrolled}/{course.maxEnrollment}
+                            </span>
+                            <span className="sm:hidden">{course.enrolled}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-current text-yellow-500" />
+                            {course.rating}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs sm:text-sm text-muted-foreground truncate">
+                            by {course.instructor}
+                          </span>
+                          <Badge
+                            variant={
+                              course.difficulty === "Beginner"
+                                ? "secondary"
+                                : course.difficulty === "Intermediate"
+                                  ? "default"
+                                  : "destructive"
+                            }
+                            className="text-xs"
+                          >
+                            {course.difficulty}
+                          </Badge>
+                        </div>
+
+                        {course.prerequisites && course.prerequisites.length > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            Prerequisites: {course.prerequisites.join(", ")}
+                          </div>
+                        )}
+
+                        {course.status === "claimable" ? (
+                          <Button
+                            className="w-full"
+                            variant={getStatusVariant(course.status)}
+                            disabled={isClaiming && claimingId === course.id}
+                            onClick={() => handleClaimReward(course.id)}
+                          >
+                            {isClaiming && claimingId === course.id ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Claiming...
+                              </>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(course.status)}
+                                <span className="text-sm">{getStatusText(course.status)}</span>
+                              </div>
+                            )}
+                          </Button>
+                        ) : (
+                          <Link href={`/courses/${course.id}`} className="w-full">
+                            <Button className="w-full" variant={getStatusVariant(course.status)}>
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(course.status)}
+                                <span className="text-sm">{getStatusText(course.status)}</span>
+                              </div>
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {filteredCourses.length === 0 && (
+                <div className="text-center py-12">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg sm:text-xl font-medium text-foreground mb-2">No Active Courses Found</h3>
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    The admin may not have added any courses to the smart contract yet, or your filters match no
+                    courses.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useAccount } from "wagmi"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,27 +11,43 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useAdminFunctions } from "@/hooks/use-admin-functions"
+import { useOnChainCourses } from "@/hooks/use-on-chain-courses"
 import { WalletConnection } from "@/components/wallet-connection"
+import { CoursesTable } from "@/components/courses-table"
 import { AlertCircle, Plus, CheckCircle, Coins, Shield } from "lucide-react"
 
 export default function AdminPage() {
   const { address, isConnected } = useAccount()
+  const { courses, refetch } = useOnChainCourses()
   const {
     addCourse,
     markCompletion,
+    removeCourse,
     isOwner,
     isLoading: isCheckingOwner,
     error,
     isAddingCourse,
     isMarkingComplete,
+    isRemovingCourse,
     transactionHash,
-  } = useAdminFunctions()
+  } = useAdminFunctions({ onTransactionSuccess: refetch })
 
   const [courseId, setCourseId] = useState("")
   const [rewardAmount, setRewardAmount] = useState("")
   const [studentAddress, setStudentAddress] = useState("")
   const [completionCourseId, setCompletionCourseId] = useState("")
+
+  const activeCourses = useMemo(() => {
+    return courses.filter((course) => course.isCreated)
+  }, [courses])
 
   const handleAddCourse = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,6 +72,14 @@ export default function AdminPage() {
       setCompletionCourseId("")
     } catch (err) {
       console.error("Failed to mark completion:", err)
+    }
+  }
+
+  const handleRemoveCourse = async (courseId: number) => {
+    try {
+      await removeCourse(courseId)
+    } catch (err) {
+      console.error("Failed to remove course:", err)
     }
   }
 
@@ -222,15 +246,23 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="completionCourseId">Course ID</Label>
-                    <Input
-                      id="completionCourseId"
-                      type="number"
-                      placeholder="Enter course ID"
-                      value={completionCourseId}
-                      onChange={(e) => setCompletionCourseId(e.target.value)}
-                      required
-                    />
+                    <Label htmlFor="completionCourseId">Course</Label>
+                    <Select value={completionCourseId} onValueChange={setCompletionCourseId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeCourses.length > 0 ? (
+                          activeCourses.map((course) => (
+                            <SelectItem key={course.id} value={course.id.toString()}>
+                              {course.id}: {course.title}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-4 text-sm text-muted-foreground">No active courses on-chain.</div>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Button
                     type="submit"
@@ -256,35 +288,12 @@ export default function AdminPage() {
 
           <Separator className="my-8" />
 
-          {/* Info Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Coins className="w-5 h-5" />
-                Admin Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label className="text-sm font-medium">Connected Wallet</Label>
-                  <p className="text-sm text-muted-foreground font-mono">{address}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Network</Label>
-                  <p className="text-sm text-muted-foreground">Sepolia Testnet</p>
-                </div>
-              </div>
-              <div className="pt-4 border-t">
-                <h4 className="font-medium mb-2">Available Functions:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Add new courses with SET token rewards</li>
-                  <li>• Mark students as having completed courses</li>
-                  <li>• Students can then claim their SET token rewards</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Courses Table */}
+          <CoursesTable
+            courses={courses}
+            onDelete={handleRemoveCourse}
+            isRemovingCourse={isRemovingCourse}
+          />
         </div>
       </div>
     </div>
